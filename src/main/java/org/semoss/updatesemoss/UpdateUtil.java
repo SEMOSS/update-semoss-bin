@@ -1,4 +1,4 @@
-package org.semoss.updatestandalone;
+package org.semoss.updatesemoss;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -16,7 +16,7 @@ import org.rauschig.jarchivelib.ArchiveFormat;
 import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 import org.rauschig.jarchivelib.CompressionType;
-import org.semoss.updatestandalone.ArtifactExtractor.Packaging;
+import org.semoss.updatesemoss.ArtifactExtractor.Packaging;
 
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;

@@ -1,4 +1,4 @@
-package org.semoss.updatestandalone;
+package org.semoss.updatesemoss;
 
 import java.util.concurrent.Callable;
 

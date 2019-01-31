@@ -26,8 +26,9 @@ public class ArtifactExtractor implements Callable<String>  {
 	private final String artifactPath;
 	private final String extractToPath;
 	private final String extractedArtifactPath;
+	private final String alias;
 	
-	public ArtifactExtractor(String workingDirectory, String artifactId, String version, String classifier, Packaging packaging) throws Exception {
+	public ArtifactExtractor(String workingDirectory, String artifactId, String version, String classifier, Packaging packaging, String alias) throws Exception {
 		this.packaging = packaging;
 
 		// The way the name works is 
@@ -41,7 +42,7 @@ public class ArtifactExtractor implements Callable<String>  {
 			nameBuilder.append(version.replaceAll("SNAPSHOT", ""));
 			
 			// Parse the metadata
-			MavenMetadataParser parser = new MavenMetadataParser(workingDirectory, artifactId, version);
+			MavenMetadataParser parser = new MavenMetadataParser(workingDirectory, artifactId, version, "downloading metadata for " + alias);
 			String timestamp = parser.getValue("versioning", "snapshot", "timestamp");
 			String buildNumber = parser.getValue("versioning", "snapshot", "buildNumber");
 
@@ -64,13 +65,13 @@ public class ArtifactExtractor implements Callable<String>  {
 				? workingDirectory
 				: workingDirectory + FS + artifactId + "-" + version;
 		extractedArtifactPath = getExtractedArtifactPathFromName(workingDirectory, name);
+		
+		this.alias = alias;
 	}
 
 	@Override
 	public String call() throws Exception {
-		System.out.println("Downloading " + name + "...");
-		UpdateUtil.downloadFile(artifactUrl, artifactPath);
-		System.out.println("Extracting " + name + "...");
+		UpdateUtil.downloadFile(artifactUrl, artifactPath, "downloading " + alias);
 		UpdateUtil.extractFile(artifactPath, extractToPath, packaging);
 		UpdateUtil.deleteFile(artifactPath);
 		return name;

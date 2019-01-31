@@ -67,5 +67,10 @@
       <artifactId>commons-collections</artifactId>
       <version>3.2.1</version>
     </dependency>
+    <dependency>
+      <groupId>me.tongfei</groupId>
+      <artifactId>progressbar</artifactId>
+      <version>0.7.2</version>
+     </dependency>
   </dependencies>
 </project>

@@ -52,22 +52,22 @@ public class Main {
 			Set<String> expectedReturns = new HashSet<>();
 			
 			// Add home
-			ArtifactExtractor homeExtractor = new ArtifactExtractor(workingDirectory, "semoss", version, "semosshome", ArtifactExtractor.Packaging.TAR_GZ);
+			ArtifactExtractor homeExtractor = new ArtifactExtractor(workingDirectory, "semoss", version, "semosshome", ArtifactExtractor.Packaging.TAR_GZ, "semosshome ");
 			artifactExtractors.add(homeExtractor);
 			expectedReturns.add(homeExtractor.getName());
 			
 			// Add lib
-			ArtifactExtractor libExtractor = new ArtifactExtractor(workingDirectory, "monolith", version, "libraries", ArtifactExtractor.Packaging.TAR_GZ);
+			ArtifactExtractor libExtractor = new ArtifactExtractor(workingDirectory, "monolith", version, "libraries", ArtifactExtractor.Packaging.TAR_GZ, "libraries  ");
 			artifactExtractors.add(libExtractor);
 			expectedReturns.add(libExtractor.getName());
 			
 			// Add war
-			ArtifactExtractor warExtractor = new ArtifactExtractor(workingDirectory, "monolith", version, null, ArtifactExtractor.Packaging.WAR);
+			ArtifactExtractor warExtractor = new ArtifactExtractor(workingDirectory, "monolith", version, null, ArtifactExtractor.Packaging.WAR, "monolith   ");
 			artifactExtractors.add(warExtractor);
 			expectedReturns.add(warExtractor.getName());
 			
 			// Add web
-			ArtifactExtractor webExtractor = new ArtifactExtractor(workingDirectory, "semossweb", version, null, ArtifactExtractor.Packaging.WAR);
+			ArtifactExtractor webExtractor = new ArtifactExtractor(workingDirectory, "semossweb", version, null, ArtifactExtractor.Packaging.WAR, "semossweb  ");
 			artifactExtractors.add(webExtractor);
 			expectedReturns.add(webExtractor.getName());
 			
@@ -81,10 +81,7 @@ public class Main {
 			// Continue until all have completed
 			while (expectedReturns.size() > 0) {
 				try {
-					System.out.println("Waiting on " + expectedReturns.size() + " artifact(s).");
 					String name = completionService.take().get();
-					String extractedArtifactPath = ArtifactExtractor.getExtractedArtifactPathFromName(workingDirectory, name);
-					System.out.println("Sucessfully extracted " + name + " to " + extractedArtifactPath + ".");
 					expectedReturns.remove(name);
 				} catch (InterruptedException e) {
 					e.printStackTrace();

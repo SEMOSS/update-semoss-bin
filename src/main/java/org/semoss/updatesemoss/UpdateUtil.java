@@ -25,7 +25,7 @@ public class UpdateUtil {
 	
 	public static final String SONATYPE_PREFIX = "https://oss.sonatype.org/content/groups/public/org/semoss/";
 	
-	private static final int BUFFER_SIZE = 2048;
+	private static final int BUFFER_SIZE = 16384;
 	
 	public static void downloadFile(String fileUrl, String filePath, String name) throws IOException {
 		

@@ -31,14 +31,18 @@ public class UpdateUtil {
 	
 	private static final int BUFFER_SIZE = 16384;
 	
-	public static void downloadFile(String fileUrl, String filePath, String name) throws IOException {
+	private static final int NAME_LENGTH = 50;
+	
+	public static void downloadFile(String fileUrl, String filePath) throws IOException {
 		
 		// Get the total file size
 		URL url = new URL(fileUrl);
 		long fileSize = getFileSize(url);
 		
+		String fileName = Paths.get(filePath).getFileName().toString();
+		
 		// Now start download process
-		try (ProgressBar pb = new ProgressBar(name, fileSize, ProgressBarStyle.ASCII);
+		try (ProgressBar pb = new ProgressBar(formatName("downloading " + fileName), fileSize, ProgressBarStyle.ASCII);
 				ReadableByteChannel in = Channels.newChannel(url.openStream());
 				FileOutputStream fos = new FileOutputStream(filePath);
 				FileChannel out = fos.getChannel()) {
@@ -134,6 +138,18 @@ public class UpdateUtil {
 			}
 		}
 		
+	}
+	
+	private static String formatName(String name) {
+		int length = name.length();
+		if (length < NAME_LENGTH) {
+			int nAdd = NAME_LENGTH - length;
+			for (int i = 0; i < nAdd; i++) {name += " ";}; 
+		} else if (length > NAME_LENGTH) {
+			name = name.substring(0, NAME_LENGTH - 3);
+			name += "...";
+		}
+		return name;
 	}
 	
 }

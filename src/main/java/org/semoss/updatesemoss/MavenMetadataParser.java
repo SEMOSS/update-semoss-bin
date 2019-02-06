@@ -21,12 +21,12 @@ public class MavenMetadataParser {
 	private static final String VALUE_KEY = "#value";
 	private final Map<String, Object> xmlMap;
 		
-	public MavenMetadataParser(String workingDirectory, String artifactId, String version, String alias) throws Exception {
+	public MavenMetadataParser(String workingDirectory, String artifactId, String version) throws Exception {
 		
 		// Retrieve the metadata
 		String xmlUrl = UpdateUtil.SONATYPE_PREFIX + artifactId + "/" + version + "/" + MAVEN_METADATA;
 		String xmlPath = workingDirectory + FS + MAVEN_METADATA;
-		UpdateUtil.downloadFile(xmlUrl, xmlPath, alias);
+		UpdateUtil.downloadFile(xmlUrl, xmlPath);
 		File xmlFile = new File(xmlPath);
 		DocumentBuilder docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 		Document doc = docBuilder.parse(xmlFile);
@@ -81,7 +81,7 @@ public class MavenMetadataParser {
 	}
 	
 	public static void main(String args[]) throws Exception {
-		MavenMetadataParser parser = new MavenMetadataParser("C:\\Users\\tbanach\\Documents\\Workspace\\updatestandalone\\wd", "semoss", "3.3.9.2-SNAPSHOT", "semoss");
+		MavenMetadataParser parser = new MavenMetadataParser("C:\\Users\\tbanach\\Documents\\Workspace\\updatestandalone\\wd", "semoss", "3.3.9.2-SNAPSHOT");
 		Map<String, Object> xmlMap = parser.getXmlMap();
 		MapUtils.verbosePrint(System.out, "xmlMap", xmlMap);
 		System.out.println(parser.getValue("versioning", "snapshot", "buildNumber"));		

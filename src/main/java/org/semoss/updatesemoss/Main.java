@@ -64,22 +64,22 @@ public class Main {
 			Set<String> expectedReturns = new HashSet<>();
 			
 			// Add home
-			ArtifactExtractor homeExtractor = new ArtifactExtractor(workingDirectory, "semoss", version, "semosshome", ArtifactExtractor.Packaging.TAR_GZ, "semosshome ");
+			ArtifactExtractor homeExtractor = new ArtifactExtractor(workingDirectory, "semoss", version, "semosshome", ArtifactExtractor.Packaging.TAR_GZ);
 			artifactExtractors.add(homeExtractor);
 			expectedReturns.add(homeExtractor.getName());
 			
 			// Add lib
-			ArtifactExtractor libExtractor = new ArtifactExtractor(workingDirectory, "monolith", version, "libraries", ArtifactExtractor.Packaging.TAR_GZ, "libraries  ");
+			ArtifactExtractor libExtractor = new ArtifactExtractor(workingDirectory, "monolith", version, "libraries", ArtifactExtractor.Packaging.TAR_GZ);
 			artifactExtractors.add(libExtractor);
 			expectedReturns.add(libExtractor.getName());
 			
 			// Add war
-			ArtifactExtractor warExtractor = new ArtifactExtractor(workingDirectory, "monolith", version, null, ArtifactExtractor.Packaging.WAR, "monolith   ");
+			ArtifactExtractor warExtractor = new ArtifactExtractor(workingDirectory, "monolith", version, null, ArtifactExtractor.Packaging.WAR);
 			artifactExtractors.add(warExtractor);
 			expectedReturns.add(warExtractor.getName());
 			
 			// Add web
-			ArtifactExtractor webExtractor = new ArtifactExtractor(workingDirectory, "semossweb", version, null, ArtifactExtractor.Packaging.WAR, "semossweb  ");
+			ArtifactExtractor webExtractor = new ArtifactExtractor(workingDirectory, "semossweb", version, null, ArtifactExtractor.Packaging.WAR);
 			artifactExtractors.add(webExtractor);
 			expectedReturns.add(webExtractor.getName());
 			

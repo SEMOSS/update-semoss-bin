@@ -16,36 +16,48 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Main {
+		
+	private static final String WORKING_DIRECTORY_KEY = "working.directory";
 	
-	private static final String FS = System.getProperty("file.separator");
-	
+	private static final String SEMOSS_HOME_DIRECTORY_KEY = "semoss.home.directory";
+	private static final String MONOLITH_DIRECTORY_KEY = "monolith.directory";
+	private static final String SEMOSS_WEB_DIRECTORY_KEY = "semoss.web.directory";
+
 	public static void main(String[] args) throws Exception {
+		
+		String workingDirectory = System.getProperty(WORKING_DIRECTORY_KEY);
+		String semossHomeDirectory = Props.getInstance().getProperty(SEMOSS_HOME_DIRECTORY_KEY);
+		String monolithDirectory = Props.getInstance().getProperty(MONOLITH_DIRECTORY_KEY);
+		String semossWebDirectory = Props.getInstance().getProperty(SEMOSS_WEB_DIRECTORY_KEY);
+		
+		System.out.println("Working directory is located in: " + workingDirectory);
+		System.out.println("semosshome is located in:        " + semossHomeDirectory);
+		System.out.println("Monolith is located in:          " + monolithDirectory);
+		System.out.println("SemossWeb is located in:         " + semossWebDirectory);
+
 		try (Scanner scanner = new Scanner(System.in)) {
+			
+			// Continue
+			System.out.print("Is this information correct? [yes/no]: ");
+			String correct = scanner.nextLine();
+			if (!correct.equalsIgnoreCase("yes")) {
+				return;
+			}
 			
 			// Get the version from the user
 			System.out.print("Enter the version: ");
 			String version = scanner.nextLine();
 			System.out.println("Updating to version " + version + ".");
 			System.out.println();
-
-			// Get the working directory from the user
-			String defaultWorkingDirectory = System.getProperty("user.home") + FS + "semoss_updates";
-			System.out.print("Enter the location of your working directory (or [Enter] for " + defaultWorkingDirectory + "): ");
-			String workingDirectory = scanner.nextLine();
-			if (workingDirectory.length() == 0) {
-				workingDirectory = defaultWorkingDirectory;
-			}
-			if (workingDirectory.endsWith("\\") || workingDirectory.endsWith("/")) {
-				workingDirectory = workingDirectory.substring(0, workingDirectory.length() - 1);
-			}
 			
 			// Set the working directory
 			Path workingDirectoryPath = Paths.get(workingDirectory);
 			if (!Files.exists(workingDirectoryPath)) {
 				Files.createDirectory(workingDirectoryPath);
-			}			
-			System.out.println("Using the working directory " + workingDirectory + ".");
-			System.out.println();
+			}
+			
+			// TODO >>>timb:
+			UpdateUtil.deleteDirectoryContentsExcept(semossHomeDirectory, "removing existing semosshome", "db", "RDF_Map.prop", "social.properties", "rpa");
 			
 			// Download artifacts
 			List<Callable<String>> artifactExtractors = new ArrayList<>();
@@ -98,8 +110,11 @@ public class Main {
 			// Shutdown the service
 			executorService.shutdownNow();
 			System.out.println("Complete.");
+			
+			
 		}
 	}
-		
+	
+	
 
 }

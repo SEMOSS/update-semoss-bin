@@ -10,7 +10,11 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 import org.rauschig.jarchivelib.ArchiveFormat;
 import org.rauschig.jarchivelib.Archiver;
@@ -95,6 +99,41 @@ public class UpdateUtil {
 	
 	public static void deleteFile(String filePath) throws IOException {
 		Files.deleteIfExists(Paths.get(filePath));
+	}
+	
+	public static void deleteDirectory(String directory) throws IOException {
+		long size = Files.walk(Paths.get(directory)).count();
+		try (ProgressBar pb = new ProgressBar("hello", size, ProgressBarStyle.ASCII)) {
+			Files.walk(Paths.get(directory))
+				.map(Path::toFile)
+				.sorted(Comparator.reverseOrder())
+				.forEach(f -> {
+					f.delete(); 
+					pb.stepBy(1);
+				});
+		}
+	}
+		
+	public static void deleteDirectoryContents(String directory, String name) throws IOException {
+		deleteDirectoryContentsExcept(directory, name);
+	}
+	
+	public static void deleteDirectoryContentsExcept(String directory, String name, String... omit) throws IOException {
+		List<String> omitList = Arrays.asList(omit);
+		File[] contents = new File(directory).listFiles();
+		try (ProgressBar pb = new ProgressBar(name, contents.length, ProgressBarStyle.ASCII)) {
+			for (File content : contents) {
+				if (!omitList.contains(content.getName())) {
+					if (content.isFile()) {
+						deleteFile(content.getAbsolutePath().toString());
+					} else if (content.isDirectory()) {
+						deleteDirectory(content.getAbsolutePath().toString());
+					}
+				}
+				pb.stepBy(1);
+			}
+		}
+		
 	}
 	
 }

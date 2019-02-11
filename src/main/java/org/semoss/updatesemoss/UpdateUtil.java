@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -13,9 +14,9 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Enumeration;
@@ -23,6 +24,8 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -55,13 +58,14 @@ public class UpdateUtil {
 				FileOutputStream outStream = new FileOutputStream(filePath);
 				FileChannel out = outStream.getChannel()) {
 			write(in, out, pb);
+			pb.stepTo(pb.getMax());
 		}
 	}
 	
 	public static void extractFile(String archivePath, String destinationPath, Packaging packaging) throws IOException {
 		switch (packaging) {
 		case TAR_GZ:
-			extractTarGz2(archivePath, destinationPath);
+			extractTarGz(archivePath, destinationPath);
 			break;
 		case WAR:
 			extractWar(archivePath, destinationPath);
@@ -71,7 +75,7 @@ public class UpdateUtil {
 		}
 	}
 
-	private static void extractTarGz2(String archivePath, String destinationPath) throws IOException {
+	private static void extractTarGz(String archivePath, String destinationPath) throws IOException {
 		
 		// The intermediate tar file
 		String intermediatePath = archivePath.replaceAll(".tar.gz", ".tar");
@@ -90,6 +94,7 @@ public class UpdateUtil {
 				FileOutputStream outStream = new FileOutputStream(intermediatePath);
 				FileChannel out = outStream.getChannel()) {
 			write(in, out, pb);
+			pb.stepTo(pb.getMax());
 		}
 
 		// Get the total file size
@@ -117,6 +122,7 @@ public class UpdateUtil {
 					}				
 				}
 			}
+			pb.stepTo(pb.getMax());
 		}
 		deleteFile(intermediatePath);
 	}
@@ -148,6 +154,7 @@ public class UpdateUtil {
 					}				
 				}
 			}
+			pb.stepTo(pb.getMax());
 		}
 	}
 	
@@ -183,41 +190,132 @@ public class UpdateUtil {
 		Files.deleteIfExists(Paths.get(filePath));
 	}
 	
+	public static void copyFile(String sourcePath, String targetPath) throws IOException {
+		Files.copy(Paths.get(sourcePath), Paths.get(targetPath), StandardCopyOption.REPLACE_EXISTING);
+	}
+		
 	public static void deleteDirectory(String directoryPath) throws IOException {
-		String directoryName = Paths.get(directoryPath).getFileName().toString();
-		long size = Files.walk(Paths.get(directoryPath)).count();
-		try (ProgressBar pb = new ProgressBar("removing contents of " + directoryName, size, ProgressBarStyle.ASCII)) {
-			Files.walk(Paths.get(directoryPath))
-				.map(Path::toFile)
-				.sorted(Comparator.reverseOrder())
-				.forEach(f -> {
-					f.delete(); 
-					pb.stepBy(1);
-				});
-		}
+		Files.walk(Paths.get(directoryPath))
+			.map(Path::toFile)
+			.sorted(Comparator.reverseOrder())
+			.forEach(f -> {
+				f.delete(); 
+			});
+	}
+	
+	public static void copyDirectory(String sourcePath, String targetPath) throws IOException {
+		Path path = Paths.get(sourcePath);
+		Files.walk(Paths.get(sourcePath))
+			.map(Path::toFile)
+			.sorted(Comparator.reverseOrder())
+			.forEach(f -> {
+				
+				// Calculate where the file should go
+				String relativePath = path.relativize(f.toPath()).toString();
+				String absolutePath = Paths.get(targetPath, relativePath).toAbsolutePath().toString();
+				
+				// Make directories that don't yet exist
+				File targetFile = new File(absolutePath);
+				if (f.isDirectory()) {
+					targetFile.mkdirs();
+				} else {
+					targetFile.getParentFile().mkdirs();
+					
+					// Finally, copy the file
+					try {
+						copyFile(f.getAbsolutePath(), Paths.get(targetPath, relativePath).toAbsolutePath().toString());
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					} 
+				}
+			});
 	}
 		
 	public static void deleteDirectoryContents(String directoryPath) throws IOException {
 		deleteDirectoryContentsExcept(directoryPath);
 	}
 	
+	public static void copyDirectoryContents(String sourcePath, String targetPath) throws IOException {
+		copyDirectoryContentsExcept(sourcePath, targetPath);
+	}
+	
 	public static void deleteDirectoryContentsExcept(String directoryPath, String... omit) throws IOException {
-		String directoryName = Paths.get(directoryPath).getFileName().toString();
-		List<String> omitList = Arrays.asList(omit);
-		File[] contents = new File(directoryPath).listFiles();
-		try (ProgressBar pb = new ProgressBar("removing contents of " + directoryName, contents.length, ProgressBarStyle.ASCII)) {
-			for (File content : contents) {
-				if (!omitList.contains(content.getName())) {
-					if (content.isFile()) {
-						deleteFile(content.getAbsolutePath().toString());
-					} else if (content.isDirectory()) {
-						deleteDirectory(content.getAbsolutePath().toString());
-					}
-				}
-				pb.stepBy(1);
-			}
-		}
+		Path path = Paths.get(directoryPath);
+		String directoryName = path.getFileName().toString();
 		
+		long size = getSizeOfDirectoryContents(directoryPath, omit);
+		
+		try (ProgressBar pb = new ProgressBar(formatName("removing contents of " + directoryName), size, ProgressBarStyle.ASCII)) {
+			getFilteredStream(directoryPath, omit)
+				.sorted(Comparator.reverseOrder())
+				.forEach(f -> {
+					f.delete(); 
+					pb.stepBy(1);
+				});
+			pb.stepTo(pb.getMax());
+		}
+	}
+	
+	public static void copyDirectoryContentsExcept(String sourcePath, String targetPath, String... omit) throws IOException {
+		Path path = Paths.get(sourcePath);
+		String directoryName = path.getFileName().toString();
+		
+		long size = getSizeOfDirectoryContents(sourcePath, omit);
+		
+		try (ProgressBar pb = new ProgressBar(formatName("copying contents of " + directoryName), size, ProgressBarStyle.ASCII)) {
+			getFilteredStream(sourcePath, omit)
+				.sorted(Comparator.reverseOrder())
+				.forEach(f -> {
+					
+					// Calculate where the file should go
+					String relativePath = path.relativize(f.toPath()).toString();
+					String absolutePath = Paths.get(targetPath, relativePath).toAbsolutePath().toString();
+					
+					// Make directories that don't yet exist
+					File targetFile = new File(absolutePath);
+					if (f.isDirectory()) {
+						targetFile.mkdirs();
+					} else {
+						targetFile.getParentFile().mkdirs();
+						
+						// Finally, copy the file
+						try {
+							copyFile(f.getAbsolutePath(), Paths.get(targetPath, relativePath).toAbsolutePath().toString());
+						} catch (IOException e) {
+							throw new UncheckedIOException(e);
+						} 
+					}
+					pb.stepBy(1);
+				});
+			pb.stepTo(pb.getMax());
+		}
+	}
+	
+	private static long getSizeOfDirectoryContents(String directoryPath, String... omit) throws IOException {
+		return getFilteredStream(directoryPath, omit).count();
+	}
+	
+	private static Stream<File> getFilteredStream(String directoryPath, String... omit) throws IOException {
+		List<String> omitList = Arrays.asList(omit).stream()
+				.map(s -> {
+					s = s.replace('\\', '/');
+					if (s.endsWith("/")) {
+						s = s.substring(0, s.length() - 1);
+					}
+					return s;
+				}).collect(Collectors.toList());
+		
+		Path path = Paths.get(directoryPath);
+		return Files.walk(Paths.get(directoryPath))
+			.map(Path::toFile)
+			.filter(f -> {
+				Path relativePath = path.relativize(f.toPath());
+				boolean isEmpty = relativePath.toString().isEmpty();
+				boolean fileIsOmitted = omitList.contains(relativePath.toString().replace('\\', '/'));
+				boolean parentDirectoryIsOmitted = relativePath.getParent() != null && omitList.contains(relativePath.getParent().toString().replace('\\', '/'));
+				boolean isOmitted = fileIsOmitted || parentDirectoryIsOmitted;
+				return !isEmpty && !isOmitted;
+			});
 	}
 	
 	private static long getFileSize(URL url) throws IOException {
@@ -280,26 +378,32 @@ public class UpdateUtil {
 	
 
 	public static void main(String[] args) throws Exception {
-		
 		String warFileUrl = "https://oss.sonatype.org/content/repositories/public/org/semoss/monolith/3.3.9.3/monolith-3.3.9.3.war";
 		String warFilePath = "C:\\Users\\tbanach\\Documents\\Workspace\\update-semoss\\wd\\monolith-3.3.9.3.war";
 		String warDestinationPath = "C:\\Users\\tbanach\\Documents\\Workspace\\update-semoss\\wd\\monolith";
 		
-		try {deleteDirectory(warDestinationPath);} catch (NoSuchFileException e) {}
 		downloadFile(warFileUrl, warFilePath);
+		copyFile(warFilePath, warFilePath + ".copy");
 		extractFile(warFilePath, warDestinationPath, Packaging.WAR);
+		copyDirectory(warDestinationPath, warDestinationPath + "_copy");
 		deleteFile(warFilePath);
+		deleteFile(warFilePath + ".copy");
 		deleteDirectoryContents(warDestinationPath);
+		deleteDirectory(warDestinationPath + "_copy");
 		
 		String tarGzFileUrl = "https://oss.sonatype.org/content/groups/public/org/semoss/semoss/3.3.7/semoss-3.3.7-semosshome.tar.gz";
 		String tarGzPath = "C:\\Users\\tbanach\\Documents\\Workspace\\update-semoss\\wd\\semoss-3.3.7-semosshome.tar.gz";
 		String tarGzDestinationPath = "C:\\Users\\tbanach\\Documents\\Workspace\\update-semoss\\wd\\semosshome";
 		
-		try {deleteDirectory(tarGzDestinationPath);} catch (NoSuchFileException e) {}
 		downloadFile(tarGzFileUrl, tarGzPath);
 		extractFile(tarGzPath, tarGzDestinationPath, Packaging.TAR_GZ);
 		deleteFile(tarGzPath);
-		deleteDirectoryContentsExcept("C:\\Users\\tbanach\\Documents\\Workspace\\update-semoss\\wd\\semosshome\\semoss-3.3.7", "RDF_Map.prop", "db");
+		copyDirectoryContentsExcept(tarGzDestinationPath + "\\semoss-3.3.7", tarGzDestinationPath + "\\semoss-3.3.7_copy0", "RDF_Map.prop", "db/security/");
+		copyDirectoryContentsExcept(tarGzDestinationPath + "\\semoss-3.3.7", tarGzDestinationPath + "\\semoss-3.3.7_copy1", "RDF_Map.prop", "db/security");
+		copyDirectoryContents(tarGzDestinationPath + "\\semoss-3.3.7", tarGzDestinationPath + "\\semoss-3.3.7_copy2");
+		deleteDirectoryContentsExcept(tarGzDestinationPath + "\\semoss-3.3.7", "RDF_Map.prop", "db/security");
+		
+		deleteDirectoryContents("C:\\Users\\tbanach\\Documents\\Workspace\\update-semoss\\wd");
 	}
 	
 }

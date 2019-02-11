@@ -56,10 +56,8 @@ public class Main {
 				Files.createDirectory(workingDirectoryPath);
 			}
 			
-			// TODO >>>timb:
-			UpdateUtil.deleteDirectoryContentsExcept(semossHomeDirectory, "removing existing semosshome", "db", "RDF_Map.prop", "social.properties", "rpa");
-			
 			// Download artifacts
+			System.out.println(">>>>>Downloading artifacts.");
 			List<Callable<String>> artifactExtractors = new ArrayList<>();
 			Set<String> expectedReturns = new HashSet<>();
 			
@@ -109,9 +107,12 @@ public class Main {
 			
 			// Shutdown the service
 			executorService.shutdownNow();
-			System.out.println("Complete.");
-			
-			
+			System.out.println(">>>>>Downloaded artifacts.");
+						
+			// Delete old code
+			UpdateUtil.deleteDirectoryContentsExcept(semossHomeDirectory, "removing existing semosshome", "db", "RDF_Map.prop", "social.properties", "rpa");
+			UpdateUtil.deleteDirectoryContentsExcept(monolithDirectory, "removing existing Monolith", "WEB-INF/web.xml", "WEB-INF\\web.xml");
+			UpdateUtil.deleteDirectoryContentsExcept(semossWebDirectory, "removing existing SemossWeb", "app.constants.js");
 		}
 	}
 	

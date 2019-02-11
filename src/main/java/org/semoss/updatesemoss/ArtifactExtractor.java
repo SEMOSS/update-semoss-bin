@@ -25,7 +25,7 @@ public class ArtifactExtractor implements Callable<String>  {
 	private final String artifactUrl;
 	private final String artifactPath;
 	private final String extractToPath;
-	private final String extractedArtifactPath;
+	private final String extractedPath;
 	
 	public ArtifactExtractor(String workingDirectory, String artifactId, String version, String classifier, Packaging packaging) throws Exception {
 		this.packaging = packaging;
@@ -58,12 +58,13 @@ public class ArtifactExtractor implements Callable<String>  {
 		artifactUrl = UpdateUtil.SONATYPE_PREFIX + artifactId + "/" + version + "/" + name + packaging.getExtension();
 		
 		artifactPath = workingDirectory + FS + name + packaging.getExtension();
+	
+		extractedPath = workingDirectory + FS + artifactId + "-" + version;
 		
 		// Since the tar.gz packaging contains a sub directory
 		extractToPath = packaging.equals(Packaging.TAR_GZ)
 				? workingDirectory
-				: workingDirectory + FS + artifactId + "-" + version;
-		extractedArtifactPath = getExtractedArtifactPathFromName(workingDirectory, name);
+				: extractedPath;
 	}
 
 	@Override
@@ -78,15 +79,8 @@ public class ArtifactExtractor implements Callable<String>  {
 		return name;
 	}
 	
-	public String getExtractedArtifactPath() {
-		return extractedArtifactPath;
-	}
-	
-	public static String getExtractedArtifactPathFromName(String workingDirectory, String name) {
-		String[] splitName = name.split("-");
-		String artifactId = splitName[0];
-		String version = splitName[1];
-		return workingDirectory + FS + artifactId + "-" + version;
+	public String getExtractedPath() {
+		return extractedPath;
 	}
 	
 }

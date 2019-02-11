@@ -1,5 +1,7 @@
 package org.semoss.updatesemoss;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,6 +19,8 @@ import java.util.concurrent.Executors;
 
 public class Main {
 		
+	private static final String FS = System.getProperty("file.separator");
+	
 	private static final String WORKING_DIRECTORY_KEY = "working.directory";
 	
 	private static final String SEMOSS_HOME_DIRECTORY_KEY = "semoss.home.directory";
@@ -48,7 +52,6 @@ public class Main {
 			System.out.print("Enter the version: ");
 			String version = scanner.nextLine();
 			System.out.println("Updating to version " + version + ".");
-			System.out.println();
 			
 			// Set the working directory
 			Path workingDirectoryPath = Paths.get(workingDirectory);
@@ -57,7 +60,6 @@ public class Main {
 			}
 			
 			// Download artifacts
-			System.out.println(">>>>>Downloading artifacts.");
 			List<Callable<String>> artifactExtractors = new ArrayList<>();
 			Set<String> expectedReturns = new HashSet<>();
 			
@@ -107,15 +109,29 @@ public class Main {
 			
 			// Shutdown the service
 			executorService.shutdownNow();
-			System.out.println(">>>>>Downloaded artifacts.");
 						
 			// Delete old code
-			UpdateUtil.deleteDirectoryContentsExcept(semossHomeDirectory, "removing existing semosshome", "db", "RDF_Map.prop", "social.properties", "rpa");
-			UpdateUtil.deleteDirectoryContentsExcept(monolithDirectory, "removing existing Monolith", "WEB-INF/web.xml", "WEB-INF\\web.xml");
+			UpdateUtil.deleteDirectoryContentsExcept(semossHomeDirectory, "removing existing semosshome", "db", "RDF_Map.prop", "social.properties", "rpa", "portables");
+			UpdateUtil.deleteDirectoryContentsExcept(monolithDirectory, "removing existing Monolith", "WEB-INF/web.xml");
 			UpdateUtil.deleteDirectoryContentsExcept(semossWebDirectory, "removing existing SemossWeb", "app.constants.js");
+			
+			String extractedHomePath = homeExtractor.getExtractedPath();
+			String extractedWarPath = warExtractor.getExtractedPath();
+			String extractedWebPath = webExtractor.getExtractedPath();
+			
+			// Update with new code
+			UpdateUtil.copyDirectoryContentsExcept(extractedHomePath, semossHomeDirectory, "db", "RDF_Map.prop", "social.properties", "rpa", "portables");
+			UpdateUtil.copyDirectoryContentsExcept(extractedWarPath, monolithDirectory, "WEB-INF/web.xml");
+			UpdateUtil.copyDirectoryContentsExcept(extractedWebPath, semossWebDirectory, "app.constants.js");
+			
+			// Write the version
+			try (BufferedWriter writer = new BufferedWriter(new FileWriter(workingDirectory + FS + "version.txt"))) {
+				writer.write(version);
+			}
+			
+			// Cleanup
+			UpdateUtil.deleteDirectoryContents(workingDirectory);
 		}
 	}
-	
-	
 
 }

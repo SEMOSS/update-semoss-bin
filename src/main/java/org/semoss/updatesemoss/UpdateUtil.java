@@ -376,8 +376,11 @@ public class UpdateUtil {
 		return name;
 	}
 	
-
 	public static void main(String[] args) throws Exception {
+		copyDirectoryContents("C:\\SEMOSS_v3.3.6.3_x64_clean", "C:\\SEMOSS_v3.3.6.3_x64");
+	}
+	
+	public static void main2(String[] args) throws Exception {
 		String warFileUrl = "https://oss.sonatype.org/content/repositories/public/org/semoss/monolith/3.3.9.3/monolith-3.3.9.3.war";
 		String warFilePath = "C:\\Users\\tbanach\\Documents\\Workspace\\update-semoss\\wd\\monolith-3.3.9.3.war";
 		String warDestinationPath = "C:\\Users\\tbanach\\Documents\\Workspace\\update-semoss\\wd\\monolith";

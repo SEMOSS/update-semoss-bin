@@ -296,6 +296,17 @@ public class UpdateUtil {
 	}
 	
 	private static Stream<File> getFilteredStream(String directoryPath, String... omit) throws IOException {
+		Path path = Paths.get(directoryPath);
+		return Files.walk(Paths.get(directoryPath))
+			.map(Path::toFile)
+			.filter(f -> {
+				String relativePath = path.relativize(f.toPath()).toString();
+				return !relativePath.isEmpty() && !isOmitted(relativePath, omit);
+			});
+	}
+	
+	private static boolean isOmitted(String relativePath, String... omit) {
+		relativePath = relativePath.replace('\\', '/');
 		List<String> omitList = Arrays.asList(omit).stream()
 				.map(s -> {
 					s = s.replace('\\', '/');
@@ -304,18 +315,10 @@ public class UpdateUtil {
 					}
 					return s;
 				}).collect(Collectors.toList());
-		
-		Path path = Paths.get(directoryPath);
-		return Files.walk(Paths.get(directoryPath))
-			.map(Path::toFile)
-			.filter(f -> {
-				Path relativePath = path.relativize(f.toPath());
-				boolean isEmpty = relativePath.toString().isEmpty();
-				boolean fileIsOmitted = omitList.contains(relativePath.toString().replace('\\', '/'));
-				boolean parentDirectoryIsOmitted = relativePath.getParent() != null && omitList.contains(relativePath.getParent().toString().replace('\\', '/'));
-				boolean isOmitted = fileIsOmitted || parentDirectoryIsOmitted;
-				return !isEmpty && !isOmitted;
-			});
+		for (String prefix : omitList) {
+			if (relativePath.startsWith(prefix)) return true;
+		}
+		return false;
 	}
 	
 	private static long getFileSize(URL url) throws IOException {
@@ -377,10 +380,6 @@ public class UpdateUtil {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		copyDirectoryContents("C:\\SEMOSS_v3.3.6.3_x64_clean", "C:\\SEMOSS_v3.3.6.3_x64");
-	}
-	
-	public static void main2(String[] args) throws Exception {
 		String warFileUrl = "https://oss.sonatype.org/content/repositories/public/org/semoss/monolith/3.3.9.3/monolith-3.3.9.3.war";
 		String warFilePath = "C:\\Users\\tbanach\\Documents\\Workspace\\update-semoss\\wd\\monolith-3.3.9.3.war";
 		String warDestinationPath = "C:\\Users\\tbanach\\Documents\\Workspace\\update-semoss\\wd\\monolith";

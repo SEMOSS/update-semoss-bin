@@ -23,6 +23,7 @@ public class Main {
 	
 	private static final String WORKING_DIRECTORY_KEY = "working.directory";
 	
+	private static final String STANDALONE_DIRECTORY_KEY = "standalone.directory";
 	private static final String SEMOSS_HOME_DIRECTORY_KEY = "semoss.home.directory";
 	private static final String MONOLITH_DIRECTORY_KEY = "monolith.directory";
 	private static final String SEMOSS_WEB_DIRECTORY_KEY = "semoss.web.directory";
@@ -30,11 +31,13 @@ public class Main {
 	public static void main(String[] args) throws Exception {
 		
 		String workingDirectory = System.getProperty(WORKING_DIRECTORY_KEY);
+		String standaloneDirectory = Props.getInstance().getProperty(STANDALONE_DIRECTORY_KEY);
 		String semossHomeDirectory = Props.getInstance().getProperty(SEMOSS_HOME_DIRECTORY_KEY);
 		String monolithDirectory = Props.getInstance().getProperty(MONOLITH_DIRECTORY_KEY);
 		String semossWebDirectory = Props.getInstance().getProperty(SEMOSS_WEB_DIRECTORY_KEY);
 		
 		System.out.println("Working directory is located in: " + workingDirectory);
+		System.out.println("Standalone is located in:        " + standaloneDirectory);
 		System.out.println("semosshome is located in:        " + semossHomeDirectory);
 		System.out.println("Monolith is located in:          " + monolithDirectory);
 		System.out.println("SemossWeb is located in:         " + semossWebDirectory);
@@ -125,7 +128,7 @@ public class Main {
 			UpdateUtil.copyDirectoryContentsExcept(extractedWebPath, semossWebDirectory, "app.constants.js");
 			
 			// Write the version
-			try (BufferedWriter writer = new BufferedWriter(new FileWriter(workingDirectory + FS + "version.txt"))) {
+			try (BufferedWriter writer = new BufferedWriter(new FileWriter(standaloneDirectory + FS + "version.txt"))) {
 				writer.write(version);
 			}
 			

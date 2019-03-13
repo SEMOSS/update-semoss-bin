@@ -56,84 +56,102 @@ public class Main {
 			String version = scanner.nextLine();
 			System.out.println("Updating to version " + version + ".");
 			
+			// Whether to download
+			System.out.print("Do you want to download files? [yes/no]: ");
+			boolean download = scanner.nextLine().equalsIgnoreCase("yes");
+			
+			// Whether to update
+			System.out.print("Do you want to update code? [yes/no]: ");
+			boolean update = scanner.nextLine().equalsIgnoreCase("yes");
+			
 			// Set the working directory
 			Path workingDirectoryPath = Paths.get(workingDirectory);
 			if (!Files.exists(workingDirectoryPath)) {
 				Files.createDirectory(workingDirectoryPath);
 			}
-			
+
 			// Download artifacts
-			List<Callable<String>> artifactExtractors = new ArrayList<>();
-			Set<String> expectedReturns = new HashSet<>();
-			
-			// Add home
-			ArtifactExtractor homeExtractor = new ArtifactExtractor(workingDirectory, "semoss", version, "semosshome", ArtifactExtractor.Packaging.TAR_GZ);
-			artifactExtractors.add(homeExtractor);
-			expectedReturns.add(homeExtractor.getName());
-			
-			// Add lib
-			ArtifactExtractor libExtractor = new ArtifactExtractor(workingDirectory, "monolith", version, "libraries", ArtifactExtractor.Packaging.TAR_GZ);
-			artifactExtractors.add(libExtractor);
-			expectedReturns.add(libExtractor.getName());
-			
-			// Add war
-			ArtifactExtractor warExtractor = new ArtifactExtractor(workingDirectory, "monolith", version, null, ArtifactExtractor.Packaging.WAR);
-			artifactExtractors.add(warExtractor);
-			expectedReturns.add(warExtractor.getName());
-			
-			// Add web
-			ArtifactExtractor webExtractor = new ArtifactExtractor(workingDirectory, "semossweb", version, null, ArtifactExtractor.Packaging.WAR);
-			artifactExtractors.add(webExtractor);
-			expectedReturns.add(webExtractor.getName());
-			
-			// Submit the tasks
-			ExecutorService executorService = Executors.newFixedThreadPool(4);
-			CompletionService<String> completionService = new ExecutorCompletionService<>(executorService);
-			for (Callable<String> artifactExtractor : artifactExtractors) {
-				completionService.submit(artifactExtractor);
-			}
-			
-			// Continue until all have completed
-			while (expectedReturns.size() > 0) {
+			if (download) {
+				List<Callable<String>> artifactExtractors = new ArrayList<>();
+				Set<String> expectedReturns = new HashSet<>();
+				
+				// Add home
+				ArtifactExtractor homeExtractor = new ArtifactExtractor(workingDirectory, "semoss", version, "semosshome", ArtifactExtractor.Packaging.TAR_GZ);
+				artifactExtractors.add(homeExtractor);
+				expectedReturns.add(homeExtractor.getName());
+				
+				// Add lib
+				ArtifactExtractor libExtractor = new ArtifactExtractor(workingDirectory, "monolith", version, "libraries", ArtifactExtractor.Packaging.TAR_GZ);
+				artifactExtractors.add(libExtractor);
+				expectedReturns.add(libExtractor.getName());
+				
+				// Add war
+				ArtifactExtractor warExtractor = new ArtifactExtractor(workingDirectory, "monolith", version, null, ArtifactExtractor.Packaging.WAR);
+				artifactExtractors.add(warExtractor);
+				expectedReturns.add(warExtractor.getName());
+				
+				// Add web
+				ArtifactExtractor webExtractor = new ArtifactExtractor(workingDirectory, "semossweb", version, null, ArtifactExtractor.Packaging.WAR);
+				artifactExtractors.add(webExtractor);
+				expectedReturns.add(webExtractor.getName());
+				
+				// Submit the tasks
+				ExecutorService executorService = Executors.newFixedThreadPool(4);
 				try {
-					String name = completionService.take().get();
-					expectedReturns.remove(name);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+					CompletionService<String> completionService = new ExecutorCompletionService<>(executorService);
+					for (Callable<String> artifactExtractor : artifactExtractors) {
+						completionService.submit(artifactExtractor);
+					}
+					
+					// Continue until all have completed
+					while (expectedReturns.size() > 0) {
+						try {
+							String name = completionService.take().get();
+							expectedReturns.remove(name);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+							executorService.shutdownNow();
+							Thread.currentThread().interrupt(); // Preserve interrupt status
+							return;
+						} catch (ExecutionException e) {
+							e.printStackTrace();
+							executorService.shutdownNow();
+							return;
+						}
+					}
+				} finally {
+					
+					// Shutdown the service
 					executorService.shutdownNow();
-					Thread.currentThread().interrupt(); // Preserve interrupt status
-					return;
-				} catch (ExecutionException e) {
-					e.printStackTrace();
-					executorService.shutdownNow();
-					return;
 				}
 			}
 			
-			// Shutdown the service
-			executorService.shutdownNow();
-						
-			// Delete old code
-			UpdateUtil.deleteDirectoryContentsExcept(semossHomeDirectory, "removing existing semosshome", "db", "RDF_Map.prop", "social.properties", "rpa", "portables");
-			UpdateUtil.deleteDirectoryContentsExcept(monolithDirectory, "removing existing Monolith", "WEB-INF/web.xml");
-			UpdateUtil.deleteDirectoryContentsExcept(semossWebDirectory, "removing existing SemossWeb", "app.constants.js");
-			
-			String extractedHomePath = homeExtractor.getExtractedPath();
-			String extractedWarPath = warExtractor.getExtractedPath();
-			String extractedWebPath = webExtractor.getExtractedPath();
-			
-			// Update with new code
-			UpdateUtil.copyDirectoryContentsExcept(extractedHomePath, semossHomeDirectory, "db", "RDF_Map.prop", "social.properties", "rpa", "portables");
-			UpdateUtil.copyDirectoryContentsExcept(extractedWarPath, monolithDirectory, "WEB-INF/web.xml");
-			UpdateUtil.copyDirectoryContentsExcept(extractedWebPath, semossWebDirectory, "app.constants.js");
-			
-			// Write the version
-			try (BufferedWriter writer = new BufferedWriter(new FileWriter(standaloneDirectory + FS + "version.txt"))) {
-				writer.write(version);
+			// Update code
+			if (update) {
+				
+				// Delete old code
+				UpdateUtil.deleteDirectoryContentsExcept(semossHomeDirectory, "removing existing semosshome", "db", "RDF_Map.prop", "social.properties", "rpa", "portables");
+				UpdateUtil.deleteDirectoryContentsExcept(monolithDirectory, "removing existing Monolith", "WEB-INF/web.xml");
+				UpdateUtil.deleteDirectoryContentsExcept(semossWebDirectory, "removing existing SemossWeb", "app.constants.js");
+				
+				String extractedHomePath = ArtifactExtractor.getExtractedPath(workingDirectory, "semoss", version);
+				String extractedWarPath = ArtifactExtractor.getExtractedPath(workingDirectory, "monolith", version);
+				String extractedWebPath = ArtifactExtractor.getExtractedPath(workingDirectory, "semossweb", version);
+				
+				// Update with new code
+				UpdateUtil.copyDirectoryContentsExcept(extractedHomePath, semossHomeDirectory, "db", "RDF_Map.prop", "social.properties", "rpa", "portables");
+				UpdateUtil.copyDirectoryContentsExcept(extractedWarPath, monolithDirectory, "WEB-INF/web.xml");
+				UpdateUtil.copyDirectoryContentsExcept(extractedWebPath, semossWebDirectory);
+				
+				// Write the version
+				try (BufferedWriter writer = new BufferedWriter(new FileWriter(standaloneDirectory + FS + "version.txt"))) {
+					writer.write(version);
+				}
+				
+				// Cleanup
+				UpdateUtil.deleteDirectoryContents(workingDirectory);
 			}
-			
-			// Cleanup
-			UpdateUtil.deleteDirectoryContents(workingDirectory);
+			System.out.println("Complete.");
 		}
 	}
 

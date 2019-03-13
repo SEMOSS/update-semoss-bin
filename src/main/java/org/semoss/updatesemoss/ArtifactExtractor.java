@@ -59,7 +59,7 @@ public class ArtifactExtractor implements Callable<String>  {
 		
 		artifactPath = workingDirectory + FS + name + packaging.getExtension();
 	
-		extractedPath = workingDirectory + FS + artifactId + "-" + version;
+		extractedPath = getExtractedPath(workingDirectory, artifactId, version);
 		
 		// Since the tar.gz packaging contains a sub directory
 		extractToPath = packaging.equals(Packaging.TAR_GZ)
@@ -81,6 +81,10 @@ public class ArtifactExtractor implements Callable<String>  {
 	
 	public String getExtractedPath() {
 		return extractedPath;
+	}
+	
+	public static String getExtractedPath(String workingDirectory, String artifactId, String version) {
+		return workingDirectory + FS + artifactId + "-" + version;
 	}
 	
 }

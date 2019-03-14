@@ -131,7 +131,7 @@ public class Main {
 				
 				// Delete old code
 				UpdateUtil.deleteDirectoryContentsExcept(semossHomeDirectory, "removing existing semosshome", "db", "RDF_Map.prop", "social.properties", "rpa", "portables");
-				UpdateUtil.deleteDirectoryContentsExcept(monolithDirectory, "removing existing Monolith", "WEB-INF/web.xml");
+				UpdateUtil.deleteDirectoryContentsExcept(monolithDirectory, "removing existing Monolith", "WEB-INF/web.xml", "app"); // Since some deployments put FE into app folder
 				UpdateUtil.deleteDirectoryContentsExcept(semossWebDirectory, "removing existing SemossWeb");
 				
 				String extractedHomePath = ArtifactExtractor.getExtractedPath(workingDirectory, "semoss", version);
@@ -140,7 +140,7 @@ public class Main {
 				
 				// Update with new code
 				UpdateUtil.copyDirectoryContentsExcept(extractedHomePath, semossHomeDirectory, "db", "RDF_Map.prop", "social.properties", "rpa", "portables");
-				UpdateUtil.copyDirectoryContentsExcept(extractedWarPath, monolithDirectory, "WEB-INF/web.xml");
+				UpdateUtil.copyDirectoryContentsExcept(extractedWarPath, monolithDirectory, "WEB-INF/web.xml", "app");
 				UpdateUtil.copyDirectoryContentsExcept(extractedWebPath, semossWebDirectory);
 				
 				// Write the version

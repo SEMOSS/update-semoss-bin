@@ -132,7 +132,7 @@ public class Main {
 				// Delete old code
 				UpdateUtil.deleteDirectoryContentsExcept(semossHomeDirectory, "removing existing semosshome", "db", "RDF_Map.prop", "social.properties", "rpa", "portables");
 				UpdateUtil.deleteDirectoryContentsExcept(monolithDirectory, "removing existing Monolith", "WEB-INF/web.xml");
-				UpdateUtil.deleteDirectoryContentsExcept(semossWebDirectory, "removing existing SemossWeb", "app.constants.js");
+				UpdateUtil.deleteDirectoryContentsExcept(semossWebDirectory, "removing existing SemossWeb");
 				
 				String extractedHomePath = ArtifactExtractor.getExtractedPath(workingDirectory, "semoss", version);
 				String extractedWarPath = ArtifactExtractor.getExtractedPath(workingDirectory, "monolith", version);

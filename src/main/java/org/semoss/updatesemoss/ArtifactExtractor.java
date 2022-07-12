@@ -55,7 +55,8 @@ public class ArtifactExtractor implements Callable<String>  {
 		
 		this.name = nameBuilder.toString();
 		
-		artifactUrl = UpdateUtil.SONATYPE_PREFIX + artifactId + "/" + version + "/" + name + packaging.getExtension();
+		
+		artifactUrl = UpdateUtil.SONATYPE_PREFIX + artifactId + "/" + sanitzeVersion(version) + "/" + name + packaging.getExtension();
 		
 		artifactPath = workingDirectory + FS + name + packaging.getExtension();
 	
@@ -84,7 +85,17 @@ public class ArtifactExtractor implements Callable<String>  {
 	}
 	
 	public static String getExtractedPath(String workingDirectory, String artifactId, String version) {
-		return workingDirectory + FS + artifactId + "-" + version;
+		return workingDirectory + FS + artifactId + "-" + sanitzeVersion(version);
+	}
+	
+	public static String sanitzeVersion(String version) {
+		if(version.contains("-")) {
+			StringBuilder versionBuilder = new StringBuilder();
+			versionBuilder.append(version.substring(0, version.indexOf("-")));
+			versionBuilder.append("-SNAPSHOT");
+			 version = versionBuilder.toString();
+		}
+		return version;
 	}
 	
 }

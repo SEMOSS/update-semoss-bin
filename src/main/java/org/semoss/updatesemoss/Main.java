@@ -27,7 +27,7 @@ public class Main {
 	private static final String SEMOSS_HOME_DIRECTORY_KEY = "semoss.home.directory";
 	private static final String MONOLITH_DIRECTORY_KEY = "monolith.directory";
 	private static final String SEMOSS_WEB_DIRECTORY_KEY = "semoss.web.directory";
-
+	public static Boolean versionUpdate = true;
 	public static void main(String[] args) throws Exception {
 		
 		String workingDirectory = System.getProperty(WORKING_DIRECTORY_KEY);
@@ -41,6 +41,10 @@ public class Main {
 		System.out.println("semosshome is located in:        " + semossHomeDirectory);
 		System.out.println("Monolith is located in:          " + monolithDirectory);
 		System.out.println("SemossWeb is located in:         " + semossWebDirectory);
+		
+		String semossVersion;
+		String monolithVersion;
+		String semosswebVersion;
 
 		try (Scanner scanner = new Scanner(System.in)) {
 			
@@ -52,9 +56,28 @@ public class Main {
 			}
 			
 			// Get the version from the user
+			System.out.print("Do you want to update to version or timestamp [version/timestamp]: ");
+			versionUpdate = scanner.nextLine().equalsIgnoreCase("version");
+
+			if(versionUpdate) {
+			// Get the version from the user
 			System.out.print("Enter the version: ");
 			String version = scanner.nextLine();
 			System.out.println("Updating to version " + version + ".");
+			semossVersion = version;
+			monolithVersion = version;
+			semosswebVersion = version;
+			} else {
+				System.out.print("Enter the Semoss timestamp: ");
+				semossVersion = scanner.nextLine();
+				System.out.println("Updating Semoss to timestamp " + semossVersion + ".");
+				System.out.print("Enter the Monolith timestamp: ");
+				monolithVersion = scanner.nextLine();
+				System.out.println("Updating Monolith to timestamp " + monolithVersion + ".");
+				System.out.print("Enter the SemossWeb timestamp: ");
+				semosswebVersion = scanner.nextLine();
+				System.out.println("Updating SemossWeb to timestamp " + semosswebVersion + ".");
+			}
 			
 			// Whether to download
 			System.out.print("Do you want to download files? [yes/no]: ");
@@ -76,22 +99,22 @@ public class Main {
 				Set<String> expectedReturns = new HashSet<>();
 				
 				// Add home
-				ArtifactExtractor homeExtractor = new ArtifactExtractor(workingDirectory, "semoss", version, "semosshome", ArtifactExtractor.Packaging.TAR_GZ);
+				ArtifactExtractor homeExtractor = new ArtifactExtractor(workingDirectory, "semoss", semossVersion, "semosshome", ArtifactExtractor.Packaging.TAR_GZ);
 				artifactExtractors.add(homeExtractor);
 				expectedReturns.add(homeExtractor.getName());
 				
 				// Add lib
-				ArtifactExtractor libExtractor = new ArtifactExtractor(workingDirectory, "monolith", version, "libraries", ArtifactExtractor.Packaging.TAR_GZ);
+				ArtifactExtractor libExtractor = new ArtifactExtractor(workingDirectory, "monolith", monolithVersion, "libraries", ArtifactExtractor.Packaging.TAR_GZ);
 				artifactExtractors.add(libExtractor);
 				expectedReturns.add(libExtractor.getName());
 				
 				// Add war
-				ArtifactExtractor warExtractor = new ArtifactExtractor(workingDirectory, "monolith", version, null, ArtifactExtractor.Packaging.WAR);
+				ArtifactExtractor warExtractor = new ArtifactExtractor(workingDirectory, "monolith", monolithVersion, null, ArtifactExtractor.Packaging.WAR);
 				artifactExtractors.add(warExtractor);
 				expectedReturns.add(warExtractor.getName());
 				
 				// Add web
-				ArtifactExtractor webExtractor = new ArtifactExtractor(workingDirectory, "semossweb", version, null, ArtifactExtractor.Packaging.WAR);
+				ArtifactExtractor webExtractor = new ArtifactExtractor(workingDirectory, "semossweb", semosswebVersion, null, ArtifactExtractor.Packaging.WAR);
 				artifactExtractors.add(webExtractor);
 				expectedReturns.add(webExtractor.getName());
 				
@@ -130,22 +153,22 @@ public class Main {
 			if (update) {
 				
 				// Delete old code
-				UpdateUtil.deleteDirectoryContentsExcept(semossHomeDirectory, "removing existing semosshome", "db", "RDF_Map.prop", "social.properties", "rpa", "portables");
+				UpdateUtil.deleteDirectoryContentsExcept(semossHomeDirectory, "removing existing semosshome", "db", "RDF_Map.prop", "social.properties", "rpa", "portables", "project", "user");
 				UpdateUtil.deleteDirectoryContentsExcept(monolithDirectory, "removing existing Monolith", "WEB-INF/web.xml", "app"); // Since some deployments put FE into app folder
 				UpdateUtil.deleteDirectoryContentsExcept(semossWebDirectory, "removing existing SemossWeb");
 				
-				String extractedHomePath = ArtifactExtractor.getExtractedPath(workingDirectory, "semoss", version);
-				String extractedWarPath = ArtifactExtractor.getExtractedPath(workingDirectory, "monolith", version);
-				String extractedWebPath = ArtifactExtractor.getExtractedPath(workingDirectory, "semossweb", version);
+				String extractedHomePath = ArtifactExtractor.getExtractedPath(workingDirectory, "semoss", semossVersion);
+				String extractedWarPath = ArtifactExtractor.getExtractedPath(workingDirectory, "monolith", monolithVersion);
+				String extractedWebPath = ArtifactExtractor.getExtractedPath(workingDirectory, "semossweb", semosswebVersion);
 				
 				// Update with new code
-				UpdateUtil.copyDirectoryContentsExcept(extractedHomePath, semossHomeDirectory, "db", "RDF_Map.prop", "social.properties", "rpa", "portables");
+				UpdateUtil.copyDirectoryContentsExcept(extractedHomePath, semossHomeDirectory, "db", "RDF_Map.prop", "social.properties", "rpa", "portables", "project", "user");
 				UpdateUtil.copyDirectoryContentsExcept(extractedWarPath, monolithDirectory, "WEB-INF/web.xml", "app");
 				UpdateUtil.copyDirectoryContentsExcept(extractedWebPath, semossWebDirectory);
 				
 				// Write the version
 				try (BufferedWriter writer = new BufferedWriter(new FileWriter(standaloneDirectory + FS + "version.txt"))) {
-					writer.write(version);
+					writer.write(sanitzeVersion(semossVersion));
 				}
 				
 				// Cleanup
@@ -153,6 +176,19 @@ public class Main {
 			}
 			System.out.println("Complete.");
 		}
+		
+
 	}
+	
+	public static String sanitzeVersion(String version) {
+		if(version.contains("-")) {
+			StringBuilder versionBuilder = new StringBuilder();
+			versionBuilder.append(version.substring(0, version.indexOf("-")));
+			versionBuilder.append("-SNAPSHOT");
+			 version = versionBuilder.toString();
+		}
+		return version;
+	}
+
 
 }

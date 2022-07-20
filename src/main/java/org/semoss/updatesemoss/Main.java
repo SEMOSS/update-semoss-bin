@@ -153,7 +153,7 @@ public class Main {
 			if (update) {
 				
 				// Delete old code
-				UpdateUtil.deleteDirectoryContentsExcept(semossHomeDirectory, "removing existing semosshome", "db", "RDF_Map.prop", "social.properties", "rpa", "portables", "project", "user");
+				UpdateUtil.deleteDirectoryContentsExcept(semossHomeDirectory, "removing existing semosshome", "db", "RDF_Map.prop", "social.properties", "rpa", "portables", "project", "saml", "user");
 				UpdateUtil.deleteDirectoryContentsExcept(monolithDirectory, "removing existing Monolith", "WEB-INF/web.xml", "app"); // Since some deployments put FE into app folder
 				UpdateUtil.deleteDirectoryContentsExcept(semossWebDirectory, "removing existing SemossWeb");
 				

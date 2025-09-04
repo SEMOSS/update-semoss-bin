@@ -24,7 +24,7 @@ public class MavenMetadataParser {
 	public MavenMetadataParser(String workingDirectory, String artifactId, String version) throws Exception {
 		
 		// Retrieve the metadata
-		String xmlUrl = UpdateUtil.SONATYPE_PREFIX + artifactId + "/" + version + "/" + MAVEN_METADATA;
+		String xmlUrl = UpdateUtil.SONATYPE_SNAPSHOT_PREFIX + artifactId + "/" + version + "/" + MAVEN_METADATA;
 		String xmlPath = workingDirectory + FS + MAVEN_METADATA;
 		UpdateUtil.downloadFile(xmlUrl, xmlPath);
 		File xmlFile = new File(xmlPath);

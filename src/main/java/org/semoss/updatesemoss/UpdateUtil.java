@@ -37,8 +37,13 @@ import me.tongfei.progressbar.ProgressBarStyle;
 
 public class UpdateUtil {
 	
-	public static final String SONATYPE_PREFIX = "https://oss.sonatype.org/content/groups/public/org/semoss/";
+	// Kunal : this is the legacy url
+	//public static final String SONATYPE_PREFIX = "https://oss.sonatype.org/content/groups/public/org/semoss/";
 	
+	public static final String SONATYPE_RELEASE_PREFIX = "https://repo1.maven.org/maven2/org/semoss/semoss/";
+    public static final String SONATYPE_SNAPSHOT_PREFIX = "https://central.sonatype.com/repository/maven-snapshots/org/semoss/";
+
+
 	private static final int BUFFER_SIZE = 16384;
 	
 	private static final int NAME_LENGTH = 50;
@@ -257,38 +262,47 @@ public class UpdateUtil {
 	}
 	
 	public static void copyDirectoryContentsExcept(String sourcePath, String targetPath, String... omit) throws IOException {
-		Path path = Paths.get(sourcePath);
-		String directoryName = path.getFileName().toString();
-		
-		long size = getSizeOfDirectoryContents(sourcePath, omit);
-		
-		try (ProgressBar pb = new ProgressBar(formatName("copying contents of " + directoryName), size, ProgressBarStyle.ASCII)) {
-			getFilteredStream(sourcePath, omit)
-				.sorted(Comparator.reverseOrder())
-				.forEach(f -> {
-					
-					// Calculate where the file should go
-					String relativePath = path.relativize(f.toPath()).toString();
-					String absolutePath = Paths.get(targetPath, relativePath).toAbsolutePath().toString();
-					
-					// Make directories that don't yet exist
-					File targetFile = new File(absolutePath);
-					if (f.isDirectory()) {
-						targetFile.mkdirs();
-					} else {
-						targetFile.getParentFile().mkdirs();
-						
-						// Finally, copy the file
-						try {
-							copyFile(f.getAbsolutePath(), Paths.get(targetPath, relativePath).toAbsolutePath().toString());
-						} catch (IOException e) {
-							throw new UncheckedIOException(e);
-						} 
-					}
-					pb.stepBy(1);
-				});
-			pb.stepTo(pb.getMax());
-		}
+	    Path path = Paths.get(sourcePath);
+	    String directoryName = path.getFileName().toString();
+
+	    long size = getSizeOfDirectoryContents(sourcePath, omit);
+
+	    try (ProgressBar pb = new ProgressBar(formatName("copying contents of " + directoryName), size, ProgressBarStyle.ASCII)) {
+	        Files.walk(Paths.get(sourcePath))
+	            .map(Path::toFile)
+	            .sorted(Comparator.reverseOrder())
+	            .forEach(f -> {
+	                String relativePath = path.relativize(f.toPath()).toString();
+	                String absolutePath = Paths.get(targetPath, relativePath).toAbsolutePath().toString();
+
+	                boolean shouldOmit = false;
+	                if (isOmitted(relativePath, omit)) {
+	                    File targetFile = new File(absolutePath);
+	                    if (targetFile.exists()) {
+	                        shouldOmit = true; // Omit only if already exists in target
+	                    }
+	                }
+	                if (shouldOmit) {
+	                    pb.stepBy(1);
+	                    return;
+	                }
+
+	                // --- original code for mkdirs & copying ---
+	                File targetFile = new File(absolutePath);
+	                if (f.isDirectory()) {
+	                    targetFile.mkdirs();
+	                } else {
+	                    targetFile.getParentFile().mkdirs();
+	                    try {
+	                        copyFile(f.getAbsolutePath(), absolutePath);
+	                    } catch (IOException e) {
+	                        throw new UncheckedIOException(e);
+	                    }
+	                }
+	                pb.stepBy(1);
+	            });
+	        pb.stepTo(pb.getMax());
+	    }
 	}
 	
 	private static long getSizeOfDirectoryContents(String directoryPath, String... omit) throws IOException {

@@ -55,8 +55,14 @@ public class ArtifactExtractor implements Callable<String>  {
 		
 		this.name = nameBuilder.toString();
 		
-		
-		artifactUrl = UpdateUtil.SONATYPE_PREFIX + artifactId + "/" + sanitzeVersion(version) + "/" + name + packaging.getExtension();
+		String baseUrl;
+		if (isSnapshot(version)) {
+			baseUrl = UpdateUtil.SONATYPE_SNAPSHOT_PREFIX;
+		} else {
+			baseUrl = UpdateUtil.SONATYPE_RELEASE_PREFIX;
+		}
+		artifactUrl = baseUrl + artifactId + "/" + sanitzeVersion(version) + "/" + name + packaging.getExtension();
+			
 		
 		artifactPath = workingDirectory + FS + name + packaging.getExtension();
 	
@@ -89,13 +95,17 @@ public class ArtifactExtractor implements Callable<String>  {
 	}
 	
 	public static String sanitzeVersion(String version) {
-		if(version.contains("-")) {
-			StringBuilder versionBuilder = new StringBuilder();
-			versionBuilder.append(version.substring(0, version.indexOf("-")));
-			versionBuilder.append("-SNAPSHOT");
-			 version = versionBuilder.toString();
-		}
+//		if(version.contains("-")) {
+//			StringBuilder versionBuilder = new StringBuilder();
+//			versionBuilder.append(version.substring(0, version.indexOf("-")));
+//			versionBuilder.append("-SNAPSHOT");
+//			 version = versionBuilder.toString();
+//		}
 		return version;
+	}
+
+	public static boolean isSnapshot(String version) {
+    return version != null && version.contains("SNAPSHOT");
 	}
 	
 }

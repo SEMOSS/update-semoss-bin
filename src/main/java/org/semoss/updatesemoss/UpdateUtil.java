@@ -40,7 +40,8 @@ public class UpdateUtil {
 	// Kunal : this is the legacy url
 	//public static final String SONATYPE_PREFIX = "https://oss.sonatype.org/content/groups/public/org/semoss/";
 	
-	public static final String SONATYPE_RELEASE_PREFIX = "https://repo1.maven.org/maven2/org/semoss/semoss/";
+	public static final String SONATYPE_RELEASE_PREFIX = "https://repo1.maven.org/maven2/org/semoss/";
+	// public static final String SONATYPE_RELEASE_PREFIX = "https://repo1.maven.org/maven2/org/semoss/semoss/";
     public static final String SONATYPE_SNAPSHOT_PREFIX = "https://central.sonatype.com/repository/maven-snapshots/org/semoss/";
 
 
